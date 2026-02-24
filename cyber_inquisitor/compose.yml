@@ -1,0 +1,53 @@
+services:
+  client:
+    build: ./client
+    container_name: client
+    networks:
+      inquisitor_net:
+        ipv4_address: 192.168.1.2
+    healthcheck:
+      test: ["CMD", "ping", "-c1", "192.168.1.1"]
+      interval: 2s
+      retries: 5
+
+  server:
+    build: ./server
+    container_name: server
+    networks:
+      inquisitor_net:
+        ipv4_address: 192.168.1.1
+    depends_on:
+      - client
+    healthcheck:
+      test: ["CMD", "ping", "-c1", "192.168.1.2"]
+      interval: 2s
+      retries: 5
+
+  inquisitor:
+    build: ./inquisitor
+    container_name: inquisitor
+    depends_on:
+      - server
+    environment:
+      - MAC_CLIENT=${MAC_CLIENT}
+      - MAC_SERVER=${MAC_SERVER}
+    networks:
+      inquisitor_net:
+        ipv4_address: 192.168.1.3
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "inquisitor.py"]
+      interval: 2s
+      retries: 5
+
+networks:
+  inquisitor_net:
+    enable_ipv4: true
+    enable_ipv6: false
+    ipam:
+      driver: bridge
+      config:
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
