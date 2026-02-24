@@ -1,0 +1,4 @@
+Port 4242
+ListenAddress 0.0.0.0
+PermitRootLogin yes
+PasswordAuthentication yes
