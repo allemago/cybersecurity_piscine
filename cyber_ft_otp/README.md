@@ -2,7 +2,9 @@
 
 ## Introduction
 
-This project implements a **TOTP (Time-based One-Time Password)** system capable of generating ephemeral passwords from a master key.
+Passwords are one of the biggest headaches in computer security. Users forget them, share them, reuse them, and choose them poorly. Furthermore, passwords are sooner or later leaked in security breaches.
+
+This project implements a **TOTP (Time-based One-Time Password)** system capable of generating ephemeral passwords from a master key, based on [RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) and the HOTP algorithm ([RFC 4226](https://datatracker.ietf.org/doc/html/rfc4226)).
 
 ## Requirements
 

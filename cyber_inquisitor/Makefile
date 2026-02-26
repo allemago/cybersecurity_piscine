@@ -1,15 +1,25 @@
-COMPOSE		:= docker compose
+SHELL			:= bash
+COMPOSE			:= docker compose
+INSPECT			:= docker inspect -f
+NET_SETTINGS	:= .NetworkSettings.Networks
 
 all: up
 
+build:
+	@$(COMPOSE) build --no-cache client inquisitor
+
 up:
-	$(COMPOSE) up -d --wait client server
-	$(eval VARS := $(shell bash get_mac.sh))
-	$(eval MAC_CLIENT := $(word 1, $(VARS)))
-	$(eval MAC_SERVER := $(word 2, $(VARS)))
-    MAC_CLIENT=$(MAC_CLIENT) MAC_SERVER=$(MAC_SERVER) $(COMPOSE) up -d --wait inquisitor
+	@mkdir -p server_files
+	@$(COMPOSE) up -d --wait client server; \
+	MAC_CLIENT=$$($(INSPECT) '{{range $(NET_SETTINGS)}}{{.MacAddress}}{{end}}' client); \
+	MAC_SERVER=$$($(INSPECT) '{{range $(NET_SETTINGS)}}{{.MacAddress}}{{end}}' server); \
+	MAC_CLIENT=$$MAC_CLIENT MAC_SERVER=$$MAC_SERVER $(COMPOSE) up inquisitor
 
 down:
-	$(COMPOSE) down
+	@$(COMPOSE) down
+	@sudo rm -rf server_files
 
-.PHONY: all up down
+kill:
+	docker kill --signal=SIGTERM inquisitor
+
+.PHONY: all build up down kill

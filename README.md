@@ -26,13 +26,16 @@ Educational simulation of how ransomware works. The program encrypts files in a 
 ### cyber_iron_dome - Ransomware Detection
 A Linux daemon that monitors the filesystem for signs of ransomware activity: high entropy writes, mass file modifications, known crypto patterns. Written in Python using inotify.
 
+### cyber_inquisitor - ARP Spoofing & MitM
+ARP poisoning tool that performs a Man-in-the-Middle attack between two hosts on a local network. Poisons both ARP tables so traffic flows through the attacker's machine, then intercepts and displays FTP file transfers in real time. ARP tables are restored on exit. The whole environment (FTP server, client, attacker) runs in Docker Compose.
+
 ---
 
 ## Stack
 
 - **Languages**: Python, C++, C
 - **Tools**: Docker, Docker Compose, Tor, Nginx, Poetry
-- **Concepts**: TOTP/HOTP, AES encryption, filesystem monitoring, reverse engineering, .onion services, web scraping
+- **Concepts**: TOTP/HOTP, AES encryption, filesystem monitoring, reverse engineering, .onion services, web scraping, ARP spoofing, MitM
 
 ---
 
@@ -45,11 +48,12 @@ cybersecurity_piscine/
 ├── cyber_ft_onion/
 ├── cyber_reverse_me/
 ├── cyber_stockholm/
-└── cyber_iron_dome/
+├── cyber_iron_dome/
+└── cyber_inquisitor/
 ```
 
 Each module has its own README with setup and usage instructions.
 
 ---
 
-> All offensive tools in this repo (stockholm, arachnida) are strictly educational and designed to run in isolated environments.
+> All offensive tools in this repo are strictly educational and designed to run in isolated environments.
