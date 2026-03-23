@@ -1,0 +1,53 @@
+from argparse import ArgumentParser, Namespace
+from requests.exceptions import RequestException
+
+from vaccine.sqli_scanner import SqliScanner
+
+
+def validate_args() -> Namespace:
+    description = "Vaccine - SQL injection detection tool"
+    parser = ArgumentParser(description=description)
+    parser.add_argument(
+        "-o",
+        dest="output",
+        type=str,
+        default="output.json",
+        help="Output file (default: output.json)",
+    )
+    parser.add_argument(
+        "-X",
+        dest="method",
+        type=str,
+        default="GET",
+        help="HTTP method: GET or POST (default: GET)",
+    )
+    parser.add_argument(
+        "-C",
+        dest="cookies",
+        type=str,
+        default=None,
+        help='Cookies string ("PHPSESSID=abc; security=low")',
+    )
+    parser.add_argument(
+        "url",
+        type=str,
+        help="Target URL to test",
+    )
+    args = parser.parse_args()
+    return args
+
+
+def run() -> int:
+    try:
+        args = validate_args()
+        scan = SqliScanner(args.url, args.method, args.output, args.cookies)
+        scan._sql_injection()
+        return 0
+    except KeyboardInterrupt as e:
+        print(f"{type(e).__name__}: shutting down.")
+        return 0
+    except RequestException:
+        return 1
+    except (ValueError, OSError, Exception) as e:
+        print(f"{type(e).__name__}: {e}")
+        return 1
