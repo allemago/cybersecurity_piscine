@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "ft-otp"
+version = "0.1.0"
+description = "HOTP implementation"
+authors = ["allemago <gbk.maelle@outlook.fr>"]
+readme = "README.md"
+packages = [{include = "ft_otp"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+cryptography = "^42.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+
+[tool.poetry.scripts]
+ft_otp = "ft_otp.cli:main"
+ft_otp_genkey = "ft_otp.gen_key:generate_key"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

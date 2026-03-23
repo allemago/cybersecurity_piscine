@@ -1,0 +1,40 @@
+services:
+  nginx:
+    build: ./nginx
+    networks:
+      - onion_network
+
+  sshd:
+    build: ./sshd
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD:?ROOT_PASSWORD is required}
+    networks:
+      - onion_network
+
+  tor:
+    build: ./tor
+    depends_on:
+      - nginx
+      - sshd
+    volumes:
+      - tor_keys:/var/lib/tor/hidden_service
+    networks:
+      - onion_network
+
+  client:
+    build: ./client
+    depends_on:
+      - tor
+    networks:
+      - onion_network
+    profiles:
+      - test
+    stdin_open: true
+    tty: true
+
+networks:
+  onion_network:
+    driver: bridge
+
+volumes:
+  tor_keys:
