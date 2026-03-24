@@ -1,3 +1,4 @@
+"""Command-line interface for the vaccine SQL injection scanner."""
 from argparse import ArgumentParser, Namespace
 from requests.exceptions import RequestException
 
@@ -5,6 +6,12 @@ from vaccine.sqli_scanner import SqliScanner
 
 
 def validate_args() -> Namespace:
+    """
+    Parse and return command-line arguments.
+
+    Returns:
+        Namespace with attributes: url, method, output, cookies.
+    """
     description = "Vaccine - SQL injection detection tool"
     parser = ArgumentParser(description=description)
     parser.add_argument(
@@ -38,6 +45,14 @@ def validate_args() -> Namespace:
 
 
 def run() -> int:
+    """
+    Entry point for the vaccine CLI.
+
+    Parses arguments, runs the scanner, and handles top-level errors.
+
+    Returns:
+        0 on success or clean exit, 1 on error.
+    """
     try:
         args = validate_args()
         scan = SqliScanner(args.url, args.method, args.output, args.cookies)

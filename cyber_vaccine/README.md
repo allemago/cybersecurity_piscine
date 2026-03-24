@@ -1,4 +1,4 @@
-# Vaccine - (in progress)
+# Vaccine
 
 A scanner for detecting and exploiting SQL injection vulnerabilities. Provide a URL, and it will identify vulnerable parameters, fingerprint the database engine, and extract its contents: tables, columns, and data and save it to an output file.
 
@@ -9,18 +9,20 @@ A scanner for detecting and exploiting SQL injection vulnerabilities. Provide a 
 poetry install
 ```
 
-
 ---
 ## MySQL
 
-### Web (if it's working)
+### Vulnweb Acunetix (may be unavailable)
 ```bash
-poetry run vaccine -o mysql_test.json -X POST http://testphp.vulnweb.com/login.php
-# or
-poetry run vaccine -o mysql_test.json -X GET http://testphp.vulnweb.com/artists.php?artist=3
+# form fields only
+poetry run vaccine -o mysql_test.json "http://testphp.vulnweb.com/login.php"
+```
+```bash
+# form fields + query parameters
+poetry run vaccine -o mysql_test.json -X <method> "http://testphp.vulnweb.com/artists.php?artist=3"
 ```
 
-### Docker
+### DVWA - Docker
 ```bash
 # Pull image once
 docker pull vulnerables/web-dvwa
@@ -33,56 +35,53 @@ docker run --rm -d --name dvwa vulnerables/web-dvwa
 # Get IP address
 docker inspect dvwa | grep IPAddress
 ```
-```bash
-# DVWA config - 3 steps
-1 - init database "Create / Reset Database":
+#### DVWA CONFIG - 3 STEPS
+##### 1 - init database "Create / Reset Database"
+```
 http://<IP>/setup.php
+```
 
-2 - log in:
-# To login you can use the following credentials:
-# Username: admin
-# Password: password
+##### 2 - log in
+To login you can use the following credentials:  
+Username: admin  
+Password: password  
+```
 http://<IP>/login.php
+```
 
-3 - set level to low in DVWA Security
+##### 3 - set level to low in DVWA Security
+```
+http://<IP>/security.php
+```
+
+```bash
+# form fields only
+poetry run vaccine -o mysql_test.json -C "PHPSESSID=<PHPSESSID_HERE>; security=low" "http://<IP>/vulnerabilities/sqli/"
 ```
 ```bash
-# Run the scanner
-poetry run vaccine -o mysql_test.json -X GET http://<IP>/vulnerabilities/sqli/?id=1&Submit=Submit
+# form fields + query parameters
+poetry run vaccine -o mysql_test.json -X <method> -C "PHPSESSID=<PHPSESSID_HERE>; security=low" "http://<IP>/vulnerabilities/sqli/?id=1&Submit=Submit"
 ```
 
 ---
 ## SQLite
+### app_sqlite - Flask
+```bash
+poetry run app_sqlite
+```
+```bash
+# form fields only
+poetry run vaccine -o sqlite_test.json "http://localhost:5000/"
+```
+```bash
+# form fields + query parameters
+poetry run vaccine -o sqlite_test.json -X GET "http://localhost:5000/search?q=test"
 
-### Docker
-```bash
-# Pull image once
-docker pull bkimminich/juice-shop
-```
-```bash
-# Run the container
-docker run --rm -d --name juiceshop bkimminich/juice-shop
-```
-```bash
-# Get IP address
-docker inspect juiceshop | grep IPAddress
-```
-```bash
-# Run the scanner
-poetry run vaccine -o sqlite_test.json -X POST http://<IP>:3000/#/login
-# or
-poetry run vaccine -o sqlite_test.json -X GET http://<IP>/#/search?q=test
 ```
 ---
 
 # References
 
 ### DVWA (Damn Vulnerable Web App):
-```
-https://hub.docker.com/r/vulnerables/web-dvwa
-```
 
-### OWASP Juice Shop
-```
-https://hub.docker.com/r/bkimminich/juice-shop
-```
+<https://hub.docker.com/r/vulnerables/web-dvwa>

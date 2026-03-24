@@ -13,16 +13,9 @@ beautifulsoup4 = "^4.14.3"
 flask = "^3.1.3"
 pymysql = "^1.1.2"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0"
-
 [tool.poetry.scripts]
 vaccine = "vaccine.cli:run"
-app_mysql = "vaccine.app_mysql:run"
 app_sqlite = "vaccine.app_sqlite:run"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
