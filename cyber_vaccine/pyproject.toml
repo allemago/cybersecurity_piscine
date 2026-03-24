@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "Vaccine"
 version = "0.1.0"
-description = ""
+description = "SQL injection vulnerability scanner"
 authors = ["allemago <gbk.maelle@outlook.fr>"]
 readme = "README.md"
 packages = [{include = "vaccine"}]

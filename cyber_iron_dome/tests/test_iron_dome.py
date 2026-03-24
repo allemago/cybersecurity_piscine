@@ -8,8 +8,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-from src.inotify_watcher import InotifyWatcher
-from src.monitors import (
+from iron_dome.inotify_watcher import InotifyWatcher
+from iron_dome.monitors import (
     memory_usage_monitoring,
     disk_read_abuse_monitoring,
 )
@@ -126,9 +126,9 @@ class TestMemoryMonitoring:
 
     def test_memory_above_limit_logs_critical(self, caplog):
         """Memory > 100 MB: critical logged"""
-        with patch("src.monitors.get_memory_usage",
+        with patch("iron_dome.monitors.get_memory_usage",
                    return_value=101):
-            with patch("src.monitors.time.sleep",
+            with patch("iron_dome.monitors.time.sleep",
                        side_effect=StopIteration):
                 with caplog.at_level(logging.CRITICAL):
                     try:
@@ -139,9 +139,9 @@ class TestMemoryMonitoring:
 
     def test_memory_below_limit_no_critical(self, caplog):
         """Memory < 80 MB: no critical logged"""
-        with patch("src.monitors.get_memory_usage",
+        with patch("iron_dome.monitors.get_memory_usage",
                    side_effect=[50, StopIteration]):
-            with patch("src.monitors.time.sleep"):
+            with patch("iron_dome.monitors.time.sleep"):
                 with caplog.at_level(logging.CRITICAL):
                     try:
                         memory_usage_monitoring()
@@ -158,10 +158,10 @@ class TestDiskReadMonitoring:
         time_values = iter([0.0, elapsed])
         sector_values = iter([sectors_before, sectors_after])
 
-        with patch("src.monitors.get_disk_sectors_read",
+        with patch("iron_dome.monitors.get_disk_sectors_read",
                    side_effect=sector_values):
-            with patch("src.monitors.time.sleep"):
-                with patch("src.monitors.time.time",
+            with patch("iron_dome.monitors.time.sleep"):
+                with patch("iron_dome.monitors.time.time",
                            side_effect=time_values):
                     try:
                         disk_read_abuse_monitoring()

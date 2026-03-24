@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["allemago <gbk.maelle@outlook.fr>"]
 readme = "README.md"
-packages = [{include = "src"}]
+packages = [{include = "iron_dome"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -16,7 +16,7 @@ inotify-simple = "^2.0.1"
 pytest = "^8.0"
 
 [tool.poetry.scripts]
-irondome = "src.cli:run"
+irondome = "iron_dome.cli:run"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

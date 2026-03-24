@@ -10,7 +10,7 @@ import daemon
 from daemon.pidfile import PIDLockFile
 from lockfile import LockError
 
-from src.iron_dome import main
+from iron_dome.daemon import main
 
 
 def shutdown() -> None:

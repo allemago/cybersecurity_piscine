@@ -70,5 +70,5 @@ def test_nonexistent_file_does_not_crash(capsys):
 def test_validate_args_parses_files():
     """Check that CLI arguments are parsed into a list of file paths."""
     with patch("sys.argv", ["scorpion", "a.jpg", "b.jpg"]):
-        args = validate_args(None)
+        args = validate_args()
     assert args.img_files == ["a.jpg", "b.jpg"]

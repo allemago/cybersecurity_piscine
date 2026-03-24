@@ -31,20 +31,21 @@ ft_otp [-g <key_file>] [-k <key_file>]
 ### Examples
 
 ```bash
-$ echo -n "NEVER GONNA GIVE YOU UP" > key.txt
-$ ft_otp -g key.txt
+echo -n "NEVER GONNA GIVE YOU UP" > key.txt
+poetry run ft_otp -g key.txt
 ValueError: key.txt: key must be 64 hexadecimal characters.
 
-$ cat key.hex | wc -c
+poetry run ft_otp_genkey
+cat key.hex | wc -c
 64
-$ ft_otp -g key.hex
+poetry run ft_otp -g key.hex
 Key was successfully saved in ft_otp.key.
 
-$ ft_otp -k ft_otp.key
+poetry run ft_otp -k ft_otp.key
 836492
 
-$ sleep 60
-$ ft_otp -k ft_otp.key
+sleep 60
+poetry run ft_otp -k ft_otp.key
 123518
 ```
 

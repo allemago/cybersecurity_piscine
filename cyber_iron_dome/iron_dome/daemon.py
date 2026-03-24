@@ -5,9 +5,9 @@ import sys
 import logging as log
 from threading import Thread
 
-from src.inotify_watcher import InotifyWatcher
+from iron_dome.inotify_watcher import InotifyWatcher
 
-from src.monitors import (
+from iron_dome.monitors import (
     memory_usage_monitoring,
     disk_read_abuse_monitoring,
 )

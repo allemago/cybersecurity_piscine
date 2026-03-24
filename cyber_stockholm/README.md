@@ -24,7 +24,7 @@ docker run -it stockholm
 # Display version
 ./stockholm -v
 
-# Encrypt files in ~/infection
+# Encrypt files in /home/infection
 ./stockholm
 
 # Encrypt silently

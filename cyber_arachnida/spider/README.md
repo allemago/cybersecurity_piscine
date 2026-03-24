@@ -4,10 +4,6 @@ Downloads images from a website, optionally following links recursively.
 
 ## Usage
 
-```
-spider [-r] [-l DEPTH] [-p PATH] URL
-```
-
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-r` | Follow links recursively | disabled |
@@ -25,22 +21,24 @@ poetry install
 ## Examples
 
 ```bash
+# Start a local server from the tests directory
+cd tests && python3 -m http.server 8000
+```
+
+```bash
 # Download images from a single page
-poetry run spider https://example.com
+poetry run spider https://books.toscrape.com/ # http://localhost:8000/index.html
 
 # Recursively crawl up to 2 levels deep
-poetry run spider -r -l 2 https://example.com
+poetry run spider -r -l 2 https://books.toscrape.com/ # http://localhost:8000/index.html
 
 # Save to a custom folder
-poetry run spider -r -p ./images https://example.com
+poetry run spider -r -p ./images https://books.toscrape.com/ # http://localhost:8000/index.html
 ```
 
 ## Tests
 
 ```bash
-# Start a local server from the tests directory
-cd tests && python3 -m http.server 8000
-
 # Run tests
 poetry run pytest
 ```
