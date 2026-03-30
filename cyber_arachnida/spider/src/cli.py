@@ -75,12 +75,17 @@ def parse_spider() -> argparse.Namespace:
     return args
 
 
-def run() -> None:
+def run() -> int:
     """CLI entry point."""
     args = parse_spider()
     try:
         url = normalize_url(args.url)
         state = SpiderState(args.is_recursive, args.depth, args.path)
         spider(url, state)
+        return 0
+    except KeyboardInterrupt as e:
+        print(type(e).__name__)
+        return 0
     except (ValueError, OSError, RequestException) as e:
         print(f"{type(e).__name__}: {e}")
+        return 1

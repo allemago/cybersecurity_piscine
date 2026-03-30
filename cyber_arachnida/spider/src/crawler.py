@@ -141,4 +141,8 @@ def spider(url: str, state: SpiderState) -> None:
     state.base_netloc = urlparse(url).netloc
     robots = load_robots_txt(url)
     state.path = create_folder(state.path)
+    print(
+        f"{Color.BOLD}Maximum depth level : "
+        f"{state.max_depth}{Color.RESET}"
+    )
     crawl(url, state, robots, 0)
