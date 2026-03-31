@@ -83,8 +83,8 @@ def run() -> int:
         state = SpiderState(args.is_recursive, args.depth, args.path)
         spider(url, state)
         return 0
-    except KeyboardInterrupt as e:
-        print(type(e).__name__)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt received, exiting.")
         return 0
     except (ValueError, OSError, RequestException) as e:
         print(f"{type(e).__name__}: {e}")
