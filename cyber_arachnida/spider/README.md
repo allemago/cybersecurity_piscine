@@ -22,7 +22,7 @@ poetry install
 
 ```bash
 # Start a local server from the tests directory
-cd tests && python3 -m http.server 8000
+cd tests && python -m http.server 8000 --bind localhost
 ```
 
 ```bash
