@@ -4,7 +4,7 @@ from cryptography.fernet import Fernet
 from ft_otp.utils import open_file
 
 
-def get_fernet_key() -> str:
+def get_fernet_key(generate: bool) -> bytes:
     """Retrieve or generate the Fernet encryption key.
 
     Returns:
@@ -13,7 +13,9 @@ def get_fernet_key() -> str:
     file_key_path = "filekey.key"
     try:
         fernet_key = open_file(file_key_path, "rb")
-    except FileNotFoundError:
+    except FileNotFoundError as e:
+        if not generate:
+            raise FileNotFoundError(f"Fernet key is missing: {e}")
         fernet_key = Fernet.generate_key()
         with open(file_key_path, "wb") as file:
             file.write(fernet_key)
@@ -34,7 +36,7 @@ def decrypt_file(key_file: str) -> str:
     """
     encrypted = open_file(key_file, "rb")
 
-    fernet_key = get_fernet_key()
+    fernet_key = get_fernet_key(generate=False)
     fernet = Fernet(fernet_key)
 
     decrypted_key = fernet.decrypt(encrypted).decode('utf-8')
@@ -48,7 +50,7 @@ def encrypt_file(hex_file: str) -> None:
     Args:
         hex_file: Path to the plaintext file to encrypt.
     """
-    fernet_key = get_fernet_key()
+    fernet_key = get_fernet_key(generate=True)
     fernet = Fernet(fernet_key)
 
     original = open_file(hex_file).strip()
