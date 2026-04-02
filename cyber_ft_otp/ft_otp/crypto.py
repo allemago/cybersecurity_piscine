@@ -1,5 +1,6 @@
 import os
-from cryptography.fernet import Fernet
+
+from cryptography.fernet import Fernet, InvalidToken
 
 from ft_otp.utils import open_file
 
@@ -11,16 +12,21 @@ def get_fernet_key(generate: bool) -> bytes:
         Fernet key as a string.
     """
     file_key_path = "filekey.key"
-    try:
-        fernet_key = open_file(file_key_path, "rb")
-    except FileNotFoundError as e:
-        if not generate:
-            raise FileNotFoundError(f"Fernet key is missing: {e}")
+
+    if generate:
         fernet_key = Fernet.generate_key()
         with open(file_key_path, "wb") as file:
             file.write(fernet_key)
         os.chmod(file_key_path, 0o600)
+        return fernet_key
+
+    try:
         fernet_key = open_file(file_key_path, "rb")
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Fernet key is missing: {e}")
+
+    if len(fernet_key) != 44:
+        raise ValueError("filekey.key has been tampered with")
 
     return fernet_key
 
@@ -37,9 +43,13 @@ def decrypt_file(key_file: str) -> str:
     encrypted = open_file(key_file, "rb")
 
     fernet_key = get_fernet_key(generate=False)
+
     fernet = Fernet(fernet_key)
 
-    decrypted_key = fernet.decrypt(encrypted).decode('utf-8')
+    try:
+        decrypted_key = fernet.decrypt(encrypted).decode('utf-8')
+    except InvalidToken:
+        raise InvalidToken("Key file is corrupted or has been modified")
 
     return decrypted_key
 

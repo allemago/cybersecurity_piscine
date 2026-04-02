@@ -94,5 +94,8 @@ def main() -> int:
     except (OSError, ValueError) as e:
         print(f"{type(e).__name__}: {e}")
         return 1
+    except Exception as e:
+        print(f"{type(e).__name__}: {e}")
+        return 1
 
     return 0
