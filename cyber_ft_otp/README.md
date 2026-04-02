@@ -35,7 +35,7 @@ echo -n "NEVER GONNA GIVE YOU UP" > key.txt
 poetry run ft_otp -g key.txt
 ValueError: key.txt: key must be 64 hexadecimal characters.
 
-poetry run ft_otp_genkey
+poetry run genkey
 cat key.hex | wc -c
 64
 poetry run ft_otp -g key.hex

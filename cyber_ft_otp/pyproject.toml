@@ -15,7 +15,7 @@ pytest = "^8.0"
 
 [tool.poetry.scripts]
 ft_otp = "ft_otp.cli:main"
-ft_otp_genkey = "ft_otp.gen_key:generate_key"
+genkey = "ft_otp.gen_key:generate_key"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
