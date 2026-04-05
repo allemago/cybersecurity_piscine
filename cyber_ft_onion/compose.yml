@@ -6,6 +6,7 @@ services:
 
   sshd:
     build: ./sshd
+    hostname: ft_onion
     environment:
       - ROOT_PASSWORD=${ROOT_PASSWORD:?ROOT_PASSWORD is required}
     networks:

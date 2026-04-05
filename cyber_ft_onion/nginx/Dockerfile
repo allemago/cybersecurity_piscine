@@ -5,6 +5,9 @@ RUN apt update && apt install -y nginx && \
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY index.html /var/www/html/index.html
-COPY tor_meme.webp /var/www/html/tor_meme.webp
+COPY hidden_service_0.png /var/www/html/hidden_service_0.png
+COPY hidden_service_1.png /var/www/html/hidden_service_1.png
+COPY hidden_service_2.png /var/www/html/hidden_service_2.png
 
 CMD ["nginx", "-g", "daemon off;"]
+ 
