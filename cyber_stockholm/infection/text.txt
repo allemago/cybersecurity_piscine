@@ -1,1 +1,7 @@
-Hello World
+Ceci est un fichier texte de test.
+Il contient des informations importantes.
+Ne pas supprimer.
+
+Nom: Alice
+Age: 30
+Email: alice@example.com

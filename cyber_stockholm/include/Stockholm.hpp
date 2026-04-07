@@ -12,6 +12,7 @@
 # include <vector>
 # include <unordered_set>
 # include <filesystem>
+# include <algorithm>
 
 namespace fs = std::filesystem;
 

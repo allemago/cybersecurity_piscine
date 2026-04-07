@@ -6,9 +6,7 @@ RUN apt-get update && apt-get install -y \
 	libsodium-dev && \
 	rm -rf /var/lib/apt/lists/*
 
-WORKDIR /home
-
-COPY infection/ infection/
+COPY infection/ /root/infection/
 
 WORKDIR /app
 
