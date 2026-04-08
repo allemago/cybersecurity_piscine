@@ -64,7 +64,7 @@ def disk_read_abuse_monitoring() -> None:
         mb_read = bytes_read / (1024 * 1024)
         read_rate_mb_s = mb_read / time_delta
 
-        if read_rate_mb_s > 30:
+        if read_rate_mb_s > 100:
             log.warning(f"High disk read activity: {read_rate_mb_s:.2f} MB/s")
 
         prev_sectors_read = current_sectors_read
