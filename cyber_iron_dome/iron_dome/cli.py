@@ -4,6 +4,7 @@ import os
 import sys
 import signal
 import platform
+import logging as log
 from argparse import ArgumentParser
 
 import daemon
@@ -13,8 +14,10 @@ from lockfile import LockError
 from iron_dome.daemon import main
 
 
-def shutdown() -> None:
+def shutdown(signum, frame) -> None:
     """Handle SIGTERM by exiting cleanly."""
+    log.info("Iron Dome daemon stopped (SIGTERM received)")
+    log.shutdown()
     sys.exit(0)
 
 
@@ -44,22 +47,22 @@ def validate_args() -> list[str]:
     return args.path
 
 
-def run() -> None:
+def run() -> int:
     """Validate the runtime environment and start the daemon."""
     if platform.system() != "Linux":
         print("Error: this program is only compatible with Linux systems.")
-        sys.exit(1)
+        return 1
 
     if os.getuid() != 0:
         print("Error: program must be executed as root.")
-        sys.exit(1)
+        return 1
 
     try:
         path = validate_args()
         os.makedirs("/var/log/irondome", exist_ok=True)
     except OSError as e:
         print(f"Error: {e}")
-        sys.exit(1)
+        return 1
 
     try:
         with daemon.DaemonContext(
@@ -73,4 +76,11 @@ def run() -> None:
             main(path)
     except LockError as e:
         print(f"{type(e).__name__}: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
+    except Exception as e:
+        print(
+            f"{type(e).__name__}: an unexpected error occured", file=sys.stderr
+        )
+        return 1
+
+    return 0

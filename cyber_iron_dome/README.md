@@ -45,6 +45,15 @@ sudo kill $(sudo cat /var/run/irondome.pid)
 
 ## Running the tests
 
+Integration tests launch the real daemon on a temporary directory, trigger
+each type of alert with real commands (`dd`, `openssl`), then check
+the log for expected entries. They require root.
+
 ```bash
-sudo $(which poetry) run pytest -v --log-cli-level=DEBUG
+sudo $(which poetry) run pytest -v
 ```
+
+What they cover:
+- **Entropy** — overwrite text files with random data, create new high-entropy files
+- **Crypto** — encrypt files with `openssl enc` (reads `/dev/urandom`)
+- **Disk read** — read 512 MB from a block device with `dd`

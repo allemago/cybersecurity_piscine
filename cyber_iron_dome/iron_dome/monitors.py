@@ -1,6 +1,8 @@
 """Background threads for memory and disk I/O monitoring."""
 
+import os
 import time
+import signal
 import logging as log
 
 PHYSICAL_DISK_MAJORS = {8, 65, 66, 67, 252, 253, 259}
@@ -25,6 +27,7 @@ def memory_usage_monitoring() -> None:
             log.critical(
                 f"Memory limit exceeded: {memory_usage:} MB / 100 MB "
             )
+            os.kill(os.getpid(), signal.SIGTERM)
         elif memory_usage > 80:
             log.info(f"Memory usage high: {memory_usage} MB / 100 MB")
         else:
@@ -61,7 +64,7 @@ def disk_read_abuse_monitoring() -> None:
         mb_read = bytes_read / (1024 * 1024)
         read_rate_mb_s = mb_read / time_delta
 
-        if read_rate_mb_s > 100:
+        if read_rate_mb_s > 30:
             log.warning(f"High disk read activity: {read_rate_mb_s:.2f} MB/s")
 
         prev_sectors_read = current_sectors_read

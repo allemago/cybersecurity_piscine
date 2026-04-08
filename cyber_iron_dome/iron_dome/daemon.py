@@ -3,6 +3,7 @@
 import os
 import sys
 import logging as log
+from logging.handlers import WatchedFileHandler
 from threading import Thread
 
 from iron_dome.inotify_watcher import InotifyWatcher
@@ -20,18 +21,21 @@ def main(path: list[str]) -> None:
         path: List of directories or files to watch.
     """
     try:
-        log.basicConfig(
-            filename="/var/log/irondome/irondome.log",
-            encoding="utf-8",
-            filemode="a",
-            level=log.INFO,
-            format="{asctime} - {levelname} - {message}",
-            style="{",
-            datefmt="%Y-%m-%d %H:%M",
+        handler = WatchedFileHandler(
+            "/var/log/irondome/irondome.log", encoding="utf-8"
         )
+        handler.setFormatter(
+            log.Formatter(
+                fmt="{asctime} - {levelname} - {message}",
+                style="{",
+                datefmt="%Y-%m-%d %H:%M",
+            )
+        )
+        log.root.setLevel(log.INFO)
+        log.root.addHandler(handler)
         log.info(
-            f"Iron Dome daemon initialized - PID: {os.getpid()}, "
-            f"Monitoring: {path}, Memory limit: 100 MB"
+            f"Iron Dome daemon initialized - >>> PID: {os.getpid()} <<< - "
+            f"Monitoring: {path}"
         )
 
         Thread(target=memory_usage_monitoring, daemon=True).start()
