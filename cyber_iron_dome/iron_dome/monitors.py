@@ -29,9 +29,7 @@ def memory_usage_monitoring() -> None:
             )
             os.kill(os.getpid(), signal.SIGTERM)
         elif memory_usage > 80:
-            log.info(f"Memory usage high: {memory_usage} MB / 100 MB")
-        else:
-            log.info(f"Memory usage: {memory_usage} MB / 100 MB")
+            log.warning(f"Memory usage high: {memory_usage} MB / 100 MB")
         time.sleep(5)
 
 
@@ -49,7 +47,7 @@ def get_disk_sectors_read() -> int:
 
 
 def disk_read_abuse_monitoring() -> None:
-    """Check disk read rate every 5s; warn if it exceeds 100 MB/s."""
+    """Check disk read rate every second; warn if it exceeds 100 MB/s."""
     prev_sectors_read = get_disk_sectors_read()
     prev_timestamp = time.time()
     while True:
@@ -65,7 +63,7 @@ def disk_read_abuse_monitoring() -> None:
         read_rate_mb_s = mb_read / time_delta
 
         if read_rate_mb_s > 100:
-            log.warning(f"High disk read activity: {read_rate_mb_s:.2f} MB/s")
+            log.critical(f"High disk read activity: {read_rate_mb_s:.2f} MB/s")
 
         prev_sectors_read = current_sectors_read
         prev_timestamp = current_timestamp

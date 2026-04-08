@@ -161,13 +161,13 @@ class InotifyWatcher:
             if full_path not in self._file_entropy:
                 if current_entropy > 7.5:
                     if crypto_pids:
-                        log.warning(
+                        log.critical(
                             f"Cryptographic activity detected: {full_path} "
                             f"(entropy: {current_entropy:.2f}, "
                             f"suspicious PIDs {crypto_pids})"
                         )
                     else:
-                        log.warning(
+                        log.critical(
                             f"New file high entropy detected: {full_path} "
                             f"(entropy: {current_entropy:.2f})"
                         )
@@ -176,14 +176,14 @@ class InotifyWatcher:
                 delta = current_entropy - prev_entropy
                 if current_entropy > 7.5 or delta > 1.5:
                     if crypto_pids:
-                        log.warning(
+                        log.critical(
                             f"Cryptographic activity detected: {full_path} "
                             f"({prev_entropy:.2f} -> {current_entropy:.2f}"
                             f", delta: {delta:.2f}"
                             f", suspicious PIDs: {crypto_pids})"
                         )
                     else:
-                        log.warning(
+                        log.critical(
                             f"High entropy detected: {full_path} "
                             f"({prev_entropy:.2f} -> {current_entropy:.2f}"
                             f", delta: {delta:.2f})"
