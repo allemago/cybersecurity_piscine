@@ -28,10 +28,10 @@ poetry install
 
 ```bash
 # Monitor /home (default)
-sudo $(which poetry) run irondome
+sudo poetry run irondome
 
 # Monitor specific paths
-sudo $(which poetry) run irondome /etc /var/www
+sudo poetry run irondome /etc /var/www
 ```
 
 The daemon writes a PID file to `/var/run/irondome.pid` and logs
@@ -50,7 +50,7 @@ each type of alert with real commands (`dd`, `openssl`), then check
 the log for expected entries. They require root.
 
 ```bash
-sudo $(which poetry) run pytest -v
+sudo poetry run pytest -v
 ```
 
 What they cover:
