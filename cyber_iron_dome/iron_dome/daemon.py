@@ -11,6 +11,7 @@ from iron_dome.inotify_watcher import InotifyWatcher
 from iron_dome.monitors import (
     memory_usage_monitoring,
     disk_read_abuse_monitoring,
+    cryptographic_activity_monitoring,
 )
 
 
@@ -40,6 +41,7 @@ def main(path: list[str]) -> None:
 
         Thread(target=memory_usage_monitoring, daemon=True).start()
         Thread(target=disk_read_abuse_monitoring, daemon=True).start()
+        Thread(target=cryptographic_activity_monitoring, daemon=True).start()
 
         inotify_watcher = InotifyWatcher(path)
         if not inotify_watcher._path:

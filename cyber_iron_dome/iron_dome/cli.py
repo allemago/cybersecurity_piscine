@@ -16,6 +16,13 @@ from iron_dome.daemon import main
 
 def shutdown(signum, frame) -> None:
     """Handle SIGTERM by exiting cleanly."""
+    try:
+        with open("/var/run/irondome_perf.pid") as file:
+            pid = int(file.read().strip())
+        os.unlink("/var/run/irondome_perf.pid")
+        os.kill(pid, signal.SIGTERM)
+    except (OSError, ValueError):
+        pass
     log.info("Iron Dome daemon stopped (SIGTERM received)")
     log.shutdown()
     sys.exit(0)
@@ -70,6 +77,7 @@ def run() -> int:
             umask=0o077,
             stderr=open('/var/log/irondome/irondome_error.log', 'a'),
             signal_map={
+                signal.SIGINT: shutdown,
                 signal.SIGTERM: shutdown,
             }
         ):

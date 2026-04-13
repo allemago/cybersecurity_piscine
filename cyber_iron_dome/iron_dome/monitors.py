@@ -3,6 +3,7 @@
 import os
 import time
 import signal
+import subprocess
 import logging as log
 
 PHYSICAL_DISK_MAJORS = {8, 65, 66, 67, 252, 253, 259}
@@ -67,3 +68,33 @@ def disk_read_abuse_monitoring() -> None:
 
         prev_sectors_read = current_sectors_read
         prev_timestamp = current_timestamp
+
+
+def cryptographic_activity_monitoring() -> None:
+    proc = subprocess.Popen(
+        ["perf", "trace", "-e", "getrandom"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True
+    )
+
+    try:
+        with open("/var/run/irondome_perf.pid", "w") as file:
+            file.write(str(proc.pid))
+    except OSError as e:
+        log.warning(f"Could not write perf PID ({proc.pid}) file: {e}")
+
+    try:
+        for line in proc.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            if "getrandom" in line:
+                log.critical(
+                    f"Cryptographic activity, getrandom() detected: {line}"
+                )
+    except OSError:
+        pass
+    finally:
+        proc.terminate()
+        proc.wait()
