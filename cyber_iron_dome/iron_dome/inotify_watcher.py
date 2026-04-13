@@ -6,6 +6,8 @@ import logging as log
 
 from inotify_simple import INotify, flags
 
+from iron_dome.constants import TRUSTED_PATH
+
 
 class InotifyWatcher:
     """Watch directories recursively using inotify.
@@ -152,19 +154,24 @@ class InotifyWatcher:
             log.warning(f"File deleted after write: {full_path}")
         else:
             if not data:
-                log.warning(f"File empty after write: {full_path}")
                 return
 
             current_entropy = self._shannon_entropy(data)
-            crypto_pids = self._get_urandom_readers() - self._baseline_readers
+            suspicious_pids = set()
+            for pid in self._get_urandom_readers() - self._baseline_readers:
+                try:
+                    if os.readlink(f"/proc/{pid}/exe") not in TRUSTED_PATH:
+                        suspicious_pids.add(pid)
+                except OSError:
+                    pass
 
             if full_path not in self._file_entropy:
                 if current_entropy > 7.5:
-                    if crypto_pids:
+                    if suspicious_pids:
                         log.critical(
                             f"Cryptographic activity detected: {full_path} "
                             f"(entropy: {current_entropy:.2f}, "
-                            f"suspicious PIDs {crypto_pids})"
+                            f"suspicious PIDs {suspicious_pids})"
                         )
                     else:
                         log.critical(
@@ -175,12 +182,12 @@ class InotifyWatcher:
                 prev_entropy = self._file_entropy[full_path]
                 delta = current_entropy - prev_entropy
                 if current_entropy > 7.5 or delta > 1.5:
-                    if crypto_pids:
+                    if suspicious_pids:
                         log.critical(
                             f"Cryptographic activity detected: {full_path} "
                             f"({prev_entropy:.2f} -> {current_entropy:.2f}"
                             f", delta: {delta:.2f}"
-                            f", suspicious PIDs: {crypto_pids})"
+                            f", suspicious PIDs: {suspicious_pids})"
                         )
                     else:
                         log.critical(

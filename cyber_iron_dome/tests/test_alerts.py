@@ -169,3 +169,12 @@ class TestDiskReadAbuse:
         assert (
             "high disk read" in log.lower()
         ), f"Expected disk read alert in log:\n{log}"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def display_logs():
+    yield
+    if os.path.exists(LOG_PATH):
+        print(f"\n\n--- {LOG_PATH} ---")
+        with open(LOG_PATH) as f:
+            print(f.read())

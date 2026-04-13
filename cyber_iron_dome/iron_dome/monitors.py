@@ -1,12 +1,13 @@
 """Background threads for memory and disk I/O monitoring."""
 
 import os
+import re
 import time
 import signal
 import subprocess
 import logging as log
 
-PHYSICAL_DISK_MAJORS = {8, 65, 66, 67, 252, 253, 259}
+from iron_dome.constants import TRUSTED_PATH
 
 
 def get_memory_usage() -> int:
@@ -42,7 +43,7 @@ def get_disk_sectors_read() -> int:
             parts = line.split()
             major = int(parts[0])
             minor = int(parts[1])
-            if major in PHYSICAL_DISK_MAJORS and minor % 16 == 0:
+            if major == 8 and minor % 16 == 0:
                 total += int(parts[5])
     return total
 
@@ -90,9 +91,18 @@ def cryptographic_activity_monitoring() -> None:
             if not line:
                 continue
             if "getrandom" in line:
-                log.critical(
-                    f"Cryptographic activity, getrandom() detected: {line}"
-                )
+                match = re.search(r"/(\d+)\s", line)
+                if match:
+                    pid = match.group(1)
+                    try:
+                        exe = os.readlink(f"/proc/{pid}/exe")
+                    except OSError:
+                        continue
+                    if exe not in TRUSTED_PATH:
+                        log.critical(
+                            "Cryptographic activity, "
+                            f"getrandom() detected: {line}"
+                        )
     except OSError:
         pass
     finally:

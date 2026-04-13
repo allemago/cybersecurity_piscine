@@ -23,7 +23,7 @@ def shutdown(signum, frame) -> None:
         os.kill(pid, signal.SIGTERM)
     except (OSError, ValueError):
         pass
-    log.info("Iron Dome daemon stopped (SIGTERM received)")
+    log.info(f"Iron Dome/{os.getpid()} daemon stopped\n")
     log.shutdown()
     sys.exit(0)
 
