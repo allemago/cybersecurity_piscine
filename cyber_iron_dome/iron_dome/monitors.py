@@ -41,7 +41,7 @@ def get_disk_sectors_read() -> int:
             parts = line.split()
             major = int(parts[0])
             minor = int(parts[1])
-            if major in PHYSICAL_DISK_MAJORS and minor == 0:
+            if major in PHYSICAL_DISK_MAJORS and minor % 16 == 0:
                 total += int(parts[5])
     return total
 
