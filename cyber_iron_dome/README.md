@@ -70,7 +70,7 @@ sudo dd if=/dev/urandom of=/home/test_entropy.bin bs=4096 count=2 && sudo rm /ho
 Trigger a cryptographic activity alert (encrypt a file with openssl):
 
 ```bash
-echo "test data" > /tmp/test.txt && openssl enc -aes-256-cbc -in /tmp/test.txt -out /home/test.enc -pass pass:testpassword -pbkdf2 && sudo rm /home/test.enc
+echo "test data" > /tmp/test.txt && sudo openssl enc -aes-256-cbc -in /tmp/test.txt -out /home/test.enc -pass pass:testpassword -pbkdf2 && sudo rm /home/test.enc
 ```
 
 Trigger a disk read abuse alert (read 512 MB directly from disk):

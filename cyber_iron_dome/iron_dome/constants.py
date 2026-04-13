@@ -20,4 +20,8 @@ TRUSTED_PATH = [
     "/usr/bin/bash",
     "/usr/bin/python3",
     "/usr/bin/perl",
+    "/usr/bin/sudo",
+    "/usr/bin/python3.13",
+    "/usr/sbin/unix_chkpwd",
+    "/usr/bin/git",
 ]
