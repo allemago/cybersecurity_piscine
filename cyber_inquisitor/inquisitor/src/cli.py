@@ -14,7 +14,6 @@ from threading import Thread
 from ipaddress import IPv4Address
 from argparse import ArgumentParser
 
-
 from scapy.all import Ether, ARP, IP, sendp, sniff, Raw, Packet
 
 MAC_RE = re.compile("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$")
@@ -159,9 +158,9 @@ def validate_args() -> dict[str, list[str]]:
     parser = ArgumentParser(description=description)
 
     parser.add_argument("IP_src", type=str, help="IP source")
-    parser.add_argument("MAC_src", type=str, help="MAC source")
+    parser.add_argument("MAC_src", type=str.lower, help="MAC source")
     parser.add_argument("IP_target", type=str, help="IP target")
-    parser.add_argument("MAC_target", type=str, help="MAC target")
+    parser.add_argument("MAC_target", type=str.lower, help="MAC target")
 
     args = parser.parse_args()
 
@@ -184,11 +183,11 @@ def validate_args() -> dict[str, list[str]]:
     return arp_table
 
 
-def run() -> None:
+def run() -> int:
     """Start the spoof and sniff threads, then wait for a signal."""
     if platform.system() != "Linux":
         print("Error: this program is only compatible with Linux systems.")
-        sys.exit(1)
+        return 1
 
     try:
         arp_table = validate_args()
@@ -206,7 +205,14 @@ def run() -> None:
             f"{KeyboardInterrupt.__name__}: "
             "ARP tables restored - Shutting down..."
         )
-        sys.exit(0)
+        return 0
     except (ValueError, OSError) as e:
         print(f"{type(e).__name__}: {e}")
-        sys.exit(1)
+        return 1
+    except Exception as e:
+        print(f"{type(e).__name__}: an unexpected error occured")
+        return 1
+
+
+def main() -> None:
+    sys.exit(run())

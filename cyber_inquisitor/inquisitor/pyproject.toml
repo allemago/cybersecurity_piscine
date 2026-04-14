@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "inquisitor"
 version = "0.1.0"
-description = ""
+description = "ARP poisoning tool with FTP sniffing"
 authors = ["allemago <gbk.maelle@outlook.fr>"]
 packages = [{include = "src"}]
 
@@ -10,7 +10,7 @@ python = "^3.10"
 scapy = "^2.7.0"
 
 [tool.poetry.scripts]
-inquisitor = "src.cli:run"
+inquisitor = "src.cli:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
