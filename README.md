@@ -1,5 +1,7 @@
 # Cybersecurity Piscine - 42
 
+> Project completed in April — as part of the Cybersecurity Piscine.
+
 A series of small projects covering different areas of cybersecurity, done as part of the 42 school curriculum. Each module is self-contained and focuses on a specific concept.
 
 ---
