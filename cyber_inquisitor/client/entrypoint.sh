@@ -6,5 +6,5 @@ put topsecret.txt
 get topsecret.txt
 bye
 EOF
-    sleep 2
+    sleep 4
 done
