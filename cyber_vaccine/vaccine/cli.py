@@ -1,4 +1,5 @@
 """Command-line interface for the vaccine SQL injection scanner."""
+import sys
 from argparse import ArgumentParser, Namespace
 from requests.exceptions import RequestException
 
@@ -63,6 +64,13 @@ def run() -> int:
         return 0
     except RequestException:
         return 1
-    except (ValueError, OSError, Exception) as e:
+    except (ValueError, OSError) as e:
         print(f"{type(e).__name__}: {e}")
         return 1
+    except Exception as e:
+        print(f"{type(e).__name__}: an unexpected error occured")
+        return 1
+
+
+def main() -> None:
+    sys.exit(run())
